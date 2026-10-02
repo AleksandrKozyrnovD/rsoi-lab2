@@ -24,7 +24,7 @@ jobs:
 
       - name: Run unit tests loyalty
         working-directory: ./project/loyalty-service
-        run: go test -v -short ./service/
+        run: pwd && go test -v -short ./service/
 
       - name: Run unit tests payment
         working-directory: ./project/payment-service
