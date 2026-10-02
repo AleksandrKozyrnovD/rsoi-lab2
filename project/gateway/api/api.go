@@ -130,22 +130,33 @@ func (a *V1) getLoyalty(username string) (*models.LoyaltyInfoResponse, error) {
 
 // findHotel ищет отель по uid среди всех отелей reservation-service.
 func (a *V1) findHotel(hotelUid string) (*models.HotelResponse, error) {
-	var page models.PaginationResponse
-	status, err := a.doJSON(
-		http.MethodGet,
-		a.reservationServiceURL+"/api/v1/hotels?page=0&size=100",
-		nil, nil, &page,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if status >= 400 {
-		return nil, &models.RemoteError{Service: "reservation", Status: status}
-	}
-	for i := range page.Items {
-		if page.Items[i].HotelUid == hotelUid {
-			return &page.Items[i], nil
+	page := 1
+	size := 100
+
+	for {
+		var resp models.PaginationResponse
+		rawURL := fmt.Sprintf("%s/api/v1/hotels?page=%d&size=%d",
+			a.reservationServiceURL, page, size)
+
+		status, err := a.doJSON(http.MethodGet, rawURL, nil, nil, &resp)
+		if err != nil {
+			return nil, err
 		}
+		if status >= 400 {
+			return nil, &models.RemoteError{Service: "reservation", Status: status}
+		}
+
+		for i := range resp.Items {
+			if resp.Items[i].HotelUid == hotelUid {
+				return &resp.Items[i], nil
+			}
+		}
+
+		// дошли до конца пагинации
+		if len(resp.Items) < size {
+			break
+		}
+		page++
 	}
 	return nil, nil
 }
@@ -179,11 +190,13 @@ func (a *V1) HandleGetHotels(c *gin.Context) {
 	page := c.DefaultQuery("page", "1")
 	size := c.DefaultQuery("size", "10")
 
-	if _, err := strconv.Atoi(page); err != nil {
-		writeValidationError(c, models.ErrorDescription{Field: "page", Error: "must be an integer"})
+	p, err := strconv.Atoi(page)
+	if err != nil || p < 0 {
+		writeValidationError(c, models.ErrorDescription{Field: "page", Error: "must be a non-negative integer"})
 		return
 	}
-	if v, err := strconv.Atoi(size); err != nil || v < 1 || v > 100 {
+	s, err := strconv.Atoi(size)
+	if err != nil || s < 1 || s > 100 {
 		writeValidationError(c, models.ErrorDescription{Field: "size", Error: "must be between 1 and 100"})
 		return
 	}
@@ -191,7 +204,7 @@ func (a *V1) HandleGetHotels(c *gin.Context) {
 	var resp models.PaginationResponse
 	status, err := a.doJSON(
 		http.MethodGet,
-		a.reservationServiceURL+"/api/v1/hotels?page="+url.QueryEscape(page)+"&size="+url.QueryEscape(size),
+		fmt.Sprintf("%s/api/v1/hotels?page=%d&size=%d", a.reservationServiceURL, p, s),
 		nil, nil, &resp,
 	)
 	if err != nil {
@@ -204,7 +217,6 @@ func (a *V1) HandleGetHotels(c *gin.Context) {
 		})
 		return
 	}
-
 	c.JSON(http.StatusOK, resp)
 }
 
