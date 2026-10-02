@@ -3,6 +3,6 @@ http:
   port: 8080
 
 url:
-  reservation: "reservation:8070"
-  payment: "payment:8060"
-  loyalty: "loyalty:8050"
+  reservation: "http://reservation-service:8070"
+  payment: "http://payment-service:8060"
+  loyalty: "http://loyalty-service:8050"
