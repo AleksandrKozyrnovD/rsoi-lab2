@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+    "github.com/google/uuid"
+
 	"reservation-service/models"
 	"reservation-service/repository"
 )
@@ -141,6 +143,7 @@ func (s *reservationService) CreateReservation(
 	}
 
 	reservation := &models.Reservation{
+		ReservationUid: uuid.NewString(),
 		Username:      username,
 		HotelUid:      hotel.HotelUid,
 		Hotel:         *hotel,

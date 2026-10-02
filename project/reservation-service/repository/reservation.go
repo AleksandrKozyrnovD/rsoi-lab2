@@ -27,8 +27,14 @@ func (r *reservationRepository) Create(reservation *models.Reservation) (*models
 	if reservation == nil {
 		return nil, errors.New("reservation is nil")
 	}
+	if reservation.ReservationUid == "" {
+		return nil, errors.New("reservation_uid is required")
+	}
+	if reservation.HotelUid == "" {
+		return nil, errors.New("hotel_uid is required")
+	}
 
-	if err := r.DB.Create(reservation).Error; err != nil {
+	if err := r.DB.Omit("Hotel").Create(reservation).Error; err != nil {
 		return nil, fmt.Errorf("create reservation: %w", err)
 	}
 
