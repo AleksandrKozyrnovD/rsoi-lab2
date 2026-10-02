@@ -1,0 +1,8 @@
+http:
+  host: "0.0.0.0"
+  port: 8080
+
+url:
+  reservation: "reservation:8070"
+  payment: "payment:8060"
+  loyalty: "loyalty:8050"
