@@ -55,6 +55,10 @@ func main() {
 		v1.POST("/reservations", controller.HandleReservationCreate)
 		v1.GET("/reservations/:reservationUid", controller.HandleReservationGet)
 		v1.DELETE("/reservations/:reservationUid", controller.HandleReservationCancel)
+
+		r.GET("/manage/health", func(c *gin.Context) {
+			c.Status(http.StatusOK)
+		})
 	}
 
 	log.Printf("Running at %s:%d", config.HTTP.Host, config.HTTP.Port)

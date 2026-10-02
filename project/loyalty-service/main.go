@@ -53,6 +53,10 @@ func main() {
 		v1.GET("/loyalty/:username", controller.HandleLoyaltyGetByUsername)
 		v1.POST("/loyalty/:username/reservations", controller.HandleLoyaltyIncrementReservations)
 		v1.DELETE("/loyalty/:username/reservations", controller.HandleLoyaltyDecrementReservations)
+
+		r.GET("/manage/health", func(c *gin.Context) {
+			c.Status(http.StatusOK)
+		})
 	}
 
 	log.Printf("Running at %s:%d", config.HTTP.Host, config.HTTP.Port)

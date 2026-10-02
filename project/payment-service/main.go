@@ -52,6 +52,10 @@ func main() {
 		v1.POST("/payment", controller.HandlePaymentCreate)
 		v1.GET("/payment/:paymentUid", controller.HandlePaymentGetByUID)
 		v1.DELETE("/payment/:paymentUid", controller.HandlePaymentCancel)
+
+		r.GET("/manage/health", func(c *gin.Context) {
+			c.Status(http.StatusOK)
+		})
 	}
 
 	log.Printf("Running at %s:%d", config.HTTP.Host, config.HTTP.Port)
