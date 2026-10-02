@@ -24,15 +24,15 @@ jobs:
 
       - name: Run unit tests loyalty
         working-directory: ./project/loyalty-service
-        run: go test -v -short ./service/...
+        run: go test -v -short ./service/
 
       - name: Run unit tests payment
         working-directory: ./project/payment-service
-        run: go test -v -short ./service/...
+        run: go test -v -short ./service/
 
       - name: Run unit tests reservation
         working-directory: ./project/reservation-service
-        run: go test -v -short ./service/...
+        run: go test -v -short ./service/
 
       - name: Build images
         timeout-minutes: 10
