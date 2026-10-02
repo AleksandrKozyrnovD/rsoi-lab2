@@ -130,33 +130,22 @@ func (a *V1) getLoyalty(username string) (*models.LoyaltyInfoResponse, error) {
 
 // findHotel ищет отель по uid среди всех отелей reservation-service.
 func (a *V1) findHotel(hotelUid string) (*models.HotelResponse, error) {
-	page := 1
-	size := 100
-
-	for {
-		var resp models.PaginationResponse
-		rawURL := fmt.Sprintf("%s/api/v1/hotels?page=%d&size=%d",
-			a.reservationServiceURL, page, size)
-
-		status, err := a.doJSON(http.MethodGet, rawURL, nil, nil, &resp)
-		if err != nil {
-			return nil, err
+	var page models.PaginationResponse
+	status, err := a.doJSON(
+		http.MethodGet,
+		a.reservationServiceURL+"/api/v1/hotels?page=0&size=100",
+		nil, nil, &page,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if status >= 400 {
+		return nil, &models.RemoteError{Service: "reservation", Status: status}
+	}
+	for i := range page.Items {
+		if page.Items[i].HotelUid == hotelUid {
+			return &page.Items[i], nil
 		}
-		if status >= 400 {
-			return nil, &models.RemoteError{Service: "reservation", Status: status}
-		}
-
-		for i := range resp.Items {
-			if resp.Items[i].HotelUid == hotelUid {
-				return &resp.Items[i], nil
-			}
-		}
-
-		// дошли до конца пагинации
-		if len(resp.Items) < size {
-			break
-		}
-		page++
 	}
 	return nil, nil
 }
@@ -185,26 +174,33 @@ func writeValidationError(c *gin.Context, errs ...models.ErrorDescription) {
 // ============================================================
 // GET /api/v1/hotels?page=&size=
 // ============================================================
-
 func (a *V1) HandleGetHotels(c *gin.Context) {
-	page := c.DefaultQuery("page", "1")
-	size := c.DefaultQuery("size", "10")
+	pageStr := c.DefaultQuery("page", "1")
+	sizeStr := c.DefaultQuery("size", "10")
 
-	p, err := strconv.Atoi(page)
-	if err != nil || p < 0 {
-		writeValidationError(c, models.ErrorDescription{Field: "page", Error: "must be a non-negative integer"})
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		writeValidationError(c, models.ErrorDescription{
+			Field: "page", Error: "must be a positive integer",
+		})
 		return
 	}
-	s, err := strconv.Atoi(size)
-	if err != nil || s < 1 || s > 100 {
-		writeValidationError(c, models.ErrorDescription{Field: "size", Error: "must be between 1 and 100"})
+	size, err := strconv.Atoi(sizeStr)
+	if err != nil || size < 1 || size > 100 {
+		writeValidationError(c, models.ErrorDescription{
+			Field: "size", Error: "must be between 1 and 100",
+		})
 		return
 	}
+
+	// reservation-service использует 0-индексную пагинацию
+	internalPage := page - 1
 
 	var resp models.PaginationResponse
 	status, err := a.doJSON(
 		http.MethodGet,
-		fmt.Sprintf("%s/api/v1/hotels?page=%d&size=%d", a.reservationServiceURL, p, s),
+		fmt.Sprintf("%s/api/v1/hotels?page=%d&size=%d",
+			a.reservationServiceURL, internalPage, size),
 		nil, nil, &resp,
 	)
 	if err != nil {
@@ -217,6 +213,9 @@ func (a *V1) HandleGetHotels(c *gin.Context) {
 		})
 		return
 	}
+
+	// возвращаем клиенту 1-индексный номер страницы, как он и просил
+	resp.Page = page
 	c.JSON(http.StatusOK, resp)
 }
 

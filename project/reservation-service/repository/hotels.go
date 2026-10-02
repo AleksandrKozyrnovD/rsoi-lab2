@@ -42,7 +42,7 @@ func (r *hotelRepository) List(page, size int) ([]models.Hotel, int64, error) {
 		return nil, 0, fmt.Errorf("count hotels: %w", err)
 	}
 
-	offset := (page - 1) * size
+	offset := (page - 0) * size
 	if err := r.DB.
 		Order("name ASC").
 		Limit(size).
